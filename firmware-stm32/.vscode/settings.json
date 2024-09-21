@@ -1,0 +1,16 @@
+{
+    "cortex-debug.armToolchainPath": "/usr/bin/",
+    "cortex-debug.openocdPath": "/usr/bin/",
+    "makefile.configureOnOpen": true,
+    "makefile.makefilePath": "Makefile",
+    "files.associations": {
+        "*.app": "makefile",
+        "globals.h": "c",
+        "cstdint": "c",
+        "tim.h": "c",
+        "sequence-process.h": "c",
+        "adc.h": "c",
+        "system_error": "c",
+        "string_view": "c"
+    },
+}

@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "./firmware-stm32"
+		},
+		{
+			"path": "./app-pc"
+		}
+	],
+	"settings": {
+		"cortex-debug.armToolchainPath": "/usr/bin/",
+		"cortex-debug.openocdPath": "/usr/bin/",
+		"files.associations": {
+			"*.app": "makefile",
+			"globals.h": "c",
+			"sequence_data.capnp.h": "c"
+		}
+	}
+}

@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Debug Python",
+            "type": "process",
+            "command": "${input:launchDebug}",
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "launchDebug",
+            "type": "command",
+            "command": "workbench.action.debug.start",
+            "args": [
+                "Python Debug"
+            ]
+        }
+    ]
+}

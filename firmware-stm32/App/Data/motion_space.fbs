@@ -1,0 +1,12 @@
+namespace motion_space;
+
+table point {
+    index: ushort;
+    x: float;
+    v: float;
+    a: float;
+    u: short;
+}
+
+file_identifier "MSPC";
+root_type point;

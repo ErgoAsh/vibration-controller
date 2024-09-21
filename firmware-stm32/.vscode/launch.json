@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STLink Debug",
+            "cwd": "${workspaceFolder}",
+            "executable": "./Build/vibration-controller.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            "svdPath": "./STM32H7A3.svd",
+            "servertype": "stlink",
+            "serverArgs": [],
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 5
+            }
+        }
+    ]
+}

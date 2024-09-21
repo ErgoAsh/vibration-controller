@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/App",
+                "${workspaceFolder}/App/Data",
+                "${workspaceFolder}/Drivers/STM32H7xx_HAL_Driver/Inc"
+            ],
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32H7A3xxQ"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
