@@ -2,6 +2,7 @@
 
 #include "globals.h"
 #include "positioner-process.h"
+#include "proto-serialization.h"
 #include "sequence-process.h"
 #include "usart.h"
 
@@ -14,17 +15,17 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
     switch (command) {
     case COMMAND_MOVE_TO_START:
         start_moving(&positioner_process, LOCATION_1);
-        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "Command: move to LOCATION_1");
+        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "New command: Move to LOCATION_1\n\r");
         break;
 
     case COMMAND_MOVE_TO_TARGET_POSITION:
         start_moving(&positioner_process, TARGET_LOCATION);
-        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "Command: move to target position");
+        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "New command: Move to target position\n\r");
         break;
 
     case COMMAND_MOVE_TO_END:
         start_moving(&positioner_process, LOCATION_8);
-        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "Command: move to LOCATION_8");
+        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "New command: Move to LOCATION_8\n\r");
         break;
 
     case COMMAND_HEALTH_CHECK:
@@ -81,17 +82,12 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
         break;
 
     case COMMAND_PLOT_DATA:
-        parameter_with_length_t *param = (parameter_with_length_t *) parameter;
-        uint8_t *buffer = (uint8_t *) param->parameter;
-        length = param->length;
+        length = SEQUENCE_SAMPLES_COUNT;
 
         memcpy(length_buffer, &length, 2);
         HAL_UART_Transmit(&huart1, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
 
-        for (int i = 0; i < length; i++) {
-            HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, buffer, length, HAL_MAX_DELAY);
-            UNUSED(status); // TODO handle status errors
-        }
+        send_sequence_data();
         break;
 
     case COMMAND_PRINT_ON_CONSOLE:

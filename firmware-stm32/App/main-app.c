@@ -54,7 +54,7 @@ bool has_changed_polarisation = false;
 void on_loop_tick()
 {
     dispatch_event(state_machines, 2);
-    HAL_ADC_Start_IT(&hadc2);
+    //HAL_ADC_Start_IT(&hadc2);
 
     if (has_timer_tick1kHz_compared) {
         has_timer_tick1kHz_compared = false;
@@ -78,14 +78,19 @@ void on_loop_tick()
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == timer_regulation.Instance) {
-        if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]
-            || sequence_process.machine.State == &sequence_process_states[CALIBRATION_STATE]) {
-            HAL_ADC_Start_IT(&hadc2);
-        }
+        // if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]
+        //     || sequence_process.machine.State == &sequence_process_states[CALIBRATION_STATE]) {
+        //     HAL_ADC_Start_IT(&hadc2);
+        // }
     }
 
     if (htim->Instance == timer_1kHz.Instance) {
         has_timer_tick1kHz_compared = 1;
+
+        if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]
+            || sequence_process.machine.State == &sequence_process_states[CALIBRATION_STATE]) {
+            HAL_ADC_Start_IT(&hadc2);
+        }
     }
 }
 

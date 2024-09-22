@@ -145,7 +145,8 @@ state_machine_result_t initial_position_handler(state_machine_t *const state)
 
 state_machine_result_t initial_position_exit_handler(state_machine_t *const state)
 {
-    dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Initial position reached\n\r");
+    dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE,
+                             "STATE: Initial position reached, waiting for system to stabilize...\n\r");
     HAL_Delay(CALIBRATION_STAY_IN_PLACE_DELAY_MS);
     return EVENT_HANDLED;
 }
@@ -232,17 +233,7 @@ state_machine_result_t measurement_regulation_exit_handler(state_machine_t *cons
 state_machine_result_t data_sending_entry_handler(state_machine_t *const state)
 {
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Plotting data...\n\r");
-    uint8_t buffer[4096];
-    size_t data_length = 0;
-
-    serialize_sequence_data(buffer, &data_length);
-
-    parameter_with_length_t param = {
-        .parameter = buffer,
-        .length = data_length,
-    };
-
-    dispatch_command_to_host(COMMAND_PLOT_DATA, (void *) &param);
+    dispatch_command_to_host(COMMAND_PLOT_DATA, NULL);
 
     // TODO calculate new iteraton of array_n
 
@@ -266,5 +257,6 @@ state_machine_result_t data_sending_handler(state_machine_t *const state)
 
 state_machine_result_t data_sending_exit_handler(state_machine_t *const state)
 {
+    HAL_Delay(1000);
     return EVENT_HANDLED;
 }

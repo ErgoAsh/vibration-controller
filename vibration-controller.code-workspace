@@ -13,7 +13,8 @@
 		"files.associations": {
 			"*.app": "makefile",
 			"globals.h": "c",
-			"sequence_data.capnp.h": "c"
+			"sequence_data.capnp.h": "c",
+			"random": "c"
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #include "proto-serialization.h"
 
 #include "globals.h"
+#include "usart.h"
 
 ssize_t buffer_len = 0;
 uint8_t buf[4096];
@@ -81,4 +82,55 @@ int deserialize_sequence_data(sequence_data_t *output_data, uint8_t *input_buffe
 
     capn_free(&c);
     return init_mem_ret;
+}
+
+void send_sequence_data()
+{
+    float dt = DT; // Period between two measurements
+    uint8_t frame[14];
+
+    // Point without velocity or acceleration
+    struct Point p0 = {
+        .index = 0,
+        .x = sequence_samples[0],
+        .v = 0,
+        .a = 0,
+        .u = 2137, // FIXME
+    };
+    memcpy(&frame[0], &p0.x, sizeof(float));
+    memcpy(&frame[4], &p0.v, sizeof(float));
+    memcpy(&frame[8], &p0.a, sizeof(float));
+    memcpy(&frame[12], &p0.u, sizeof(uint16_t));
+
+    HAL_UART_Transmit(&huart1, (uint8_t *) frame, sizeof(frame), HAL_MAX_DELAY);
+
+    // Point without acceleration
+    struct Point p1 = {
+        .index = 1,
+        .x = sequence_samples[1],
+        .v = (sequence_samples[2] - sequence_samples[1]) / dt,
+        .a = 0,
+        .u = 2137, // FIXME
+    };
+    memcpy(&frame[0], &p1.x, sizeof(float));
+    memcpy(&frame[4], &p1.v, sizeof(float));
+    memcpy(&frame[8], &p1.a, sizeof(float));
+    memcpy(&frame[12], &p1.u, sizeof(uint16_t));
+
+    HAL_UART_Transmit(&huart1, (uint8_t *) frame, sizeof(frame), HAL_MAX_DELAY);
+
+    for (int i = 2; i < SEQUENCE_SAMPLES_COUNT; i++) {
+        float dt = DT; // Period between two measurements
+        float x = sequence_samples[i];
+        float v = (sequence_samples[i] - sequence_samples[i - 1]) / dt;
+        float a = (v - ((sequence_samples[i - 1] - sequence_samples[i - 2]) / dt)) / dt;
+        uint16_t u = 2137;
+
+        memcpy(&frame[0], &x, sizeof(float));
+        memcpy(&frame[4], &v, sizeof(float));
+        memcpy(&frame[8], &a, sizeof(float));
+        memcpy(&frame[12], &u, sizeof(uint16_t));
+
+        HAL_UART_Transmit(&huart1, (uint8_t *) frame, sizeof(frame), HAL_MAX_DELAY);
+    }
 }
