@@ -24,6 +24,49 @@ int result_indices_a[8];
 
 uint32_t iteration = 0;
 
+float regulate(data_point_t compared_point)
+{
+    find_closest_records_x(points_x, MAX_POINTS, compared_point.x, result_indices_x);
+    find_closest_records_v(points_v, MAX_POINTS, compared_point.v, result_indices_v);
+    find_closest_records_a(points_a, MAX_POINTS, compared_point.a, result_indices_a);
+
+    data_point_t points[MAX_COMPARED_POINTS * 3];
+    for (int i = 0; i < MAX_COMPARED_POINTS; i++) {
+        points[i] = points_x[result_indices_x[MAX_COMPARED_POINTS * 1 - i]];
+        calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
+    }
+
+    for (int i = MAX_COMPARED_POINTS; i < MAX_COMPARED_POINTS * 2; i++) {
+        points[i] = points_v[result_indices_v[MAX_COMPARED_POINTS * 2 - i]];
+        calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
+    }
+
+    for (int i = MAX_COMPARED_POINTS * 2; i < MAX_COMPARED_POINTS * 3; i++) {
+        points[i] = points_a[result_indices_a[MAX_COMPARED_POINTS * 3 - i]];
+        calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
+    }
+
+    qsort(points, MAX_COMPARED_POINTS * 3, sizeof(data_point_t), compare_points);
+
+    sum_u += points[0].u;
+    sum_u += points[1].u;
+    sum_u += points[2].u;
+    sum_u += points[3].u;
+
+    sum_distance += points[0].distance;
+    sum_distance += points[1].distance;
+    sum_distance += points[2].distance;
+    sum_distance += points[3].distance;
+
+    u += (points[0].u * points[0].distance) / sum_distance;
+    u += (points[1].u * points[1].distance) / sum_distance;
+    u += (points[2].u * points[2].distance) / sum_distance;
+    u += (points[3].u * points[3].distance) / sum_distance;
+    u = u / 4;
+
+    return u;
+}
+
 void test_knn()
 {
     data_point_t compared_point = {0, 351.0, 112.0, 15.0};

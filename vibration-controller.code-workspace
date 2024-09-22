@@ -1,10 +1,10 @@
 {
 	"folders": [
 		{
-			"path": "./firmware-stm32"
+			"path": "firmware-stm32"
 		},
 		{
-			"path": "./app-pc"
+			"path": "app-pc"
 		}
 	],
 	"settings": {
@@ -13,8 +13,14 @@
 		"files.associations": {
 			"*.app": "makefile",
 			"globals.h": "c",
-			"sequence_data.capnp.h": "c",
-			"random": "c"
-		}
+			"cstdint": "c",
+			"tim.h": "c",
+			"sequence-process.h": "c",
+			"adc.h": "c",
+			"system_error": "c",
+			"string_view": "c",
+			"stdlib.h": "c"
+		},
+		"cortex-debug.variableUseNaturalFormat": false
 	}
 }

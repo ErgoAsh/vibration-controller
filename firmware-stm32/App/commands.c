@@ -63,20 +63,20 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
     uint8_t length_buffer[2];
 
     uint8_t cmd = command;
-    HAL_UART_Transmit(&huart1, &cmd, 1, HAL_MAX_DELAY);
+    HAL_UART_Transmit(&uart, &cmd, 1, HAL_MAX_DELAY);
 
     switch (command) {
     case COMMAND_PLOT_X:
         length = SEQUENCE_SAMPLES_COUNT * sizeof(float);
 
         memcpy(length_buffer, &length, 2);
-        HAL_UART_Transmit(&huart1, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&uart, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
 
         uint8_t float_buffer[4];
         for (int i = 0; i < SEQUENCE_SAMPLES_COUNT; i++) {
             float sample = sequence_samples[i];
             memcpy(float_buffer, &sample, sizeof(float));
-            HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, float_buffer, sizeof(float), HAL_MAX_DELAY);
+            HAL_StatusTypeDef status = HAL_UART_Transmit(&uart, float_buffer, sizeof(float), HAL_MAX_DELAY);
             UNUSED(status); // TODO handle status errors
         }
         break;
@@ -85,7 +85,7 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
         length = SEQUENCE_SAMPLES_COUNT;
 
         memcpy(length_buffer, &length, 2);
-        HAL_UART_Transmit(&huart1, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&uart, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
 
         send_sequence_data();
         break;
@@ -93,9 +93,9 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
     case COMMAND_PRINT_ON_CONSOLE:
         length = strlen((char *) parameter);
         memcpy(length_buffer, &length, 2);
-        HAL_UART_Transmit(&huart1, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&uart, (uint8_t *) length_buffer, 2, HAL_MAX_DELAY);
 
-        HAL_UART_Transmit(&huart1, parameter, length, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&uart, parameter, length, HAL_MAX_DELAY);
         break;
 
     case COMMAND_GET_CONFIG:

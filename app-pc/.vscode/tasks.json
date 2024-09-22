@@ -8,7 +8,13 @@
             "problemMatcher": [],
             "runOptions": {
                 "runOn": "folderOpen"
-            }
+            },
+        },
+        {
+            "label": "Show plot",
+            "type": "shell",
+            "command": "python show_data.py ${input:plotNumberInput}",
+            "problemMatcher": []
         }
     ],
     "inputs": [
@@ -19,6 +25,11 @@
             "args": [
                 "Python Debug"
             ]
+        },
+        {
+            "id": "plotNumberInput",
+            "description": "Enter number of desired plot",
+            "type": "promptString"
         }
     ]
 }

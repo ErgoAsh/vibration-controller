@@ -15,6 +15,7 @@
 
 uint32_t sample_counter = 0;
 uint32_t regulation_sample_counter = 0;
+uint32_t regulation_setpoints_counter = 0;
 
 uint32_t tick_counter = 0;
 float calibration_mean = 0;
@@ -22,10 +23,12 @@ bool has_timer_tick1kHz_compared = false;
 
 uint8_t rx_buffer[64];
 uint8_t tx_buffer[64];
+bool has_usart_dma_finished = false;
 
-volatile uint16_t calibration_samples[1024];
-volatile float regulation_samples[64];
-volatile float sequence_samples[4096];
+volatile float sequence_samples[SEQUENCE_SAMPLES_COUNT];
+volatile uint16_t calibration_samples[CALIBRATION_SAMPLES_COUNT];
+volatile float regulation_samples[REGULATION_SAMPLES_COUNT];
+volatile float regulation_setpoints[SEQUENCE_SAMPLES_COUNT / REGULATION_SAMPLES_COUNT];
 
 GPIO_PinState previous_button_state = GPIO_PIN_SET;
 GPIO_PinState current_button_state = GPIO_PIN_SET;
@@ -37,7 +40,7 @@ state_machine_t *state_machines[] = {
 
 void on_initialize()
 {
-    HAL_UARTEx_ReceiveToIdle_IT(&huart1, rx_buffer, 64);
+    HAL_UARTEx_ReceiveToIdle_IT(&uart, rx_buffer, 64);
     HAL_TIM_Base_Start_IT(&timer_1kHz);
     HAL_TIM_Base_Start_IT(&timer_regulation);
     HAL_TIM_PWM_Start(&timer_electromagnet_left, TIM_CHANNEL_1);
@@ -101,31 +104,46 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]) {
         float delta_sample = (float) value - calibration_mean;
-        float sample_voltage = map(delta_sample, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
-        float sample_distance = sample_voltage / SENSOR_SENSITIVITY;
 
-        sequence_samples[sample_counter] = sample_distance;
-        regulation_samples[regulation_sample_counter] = sample_distance;
+        // Use if you want real units (m, m/s, m/s^2)
+        // float sample_voltage = map(delta_sample, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
+        // float sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000;
+        // sequence_samples[sample_counter] = sample_distance;
+        // regulation_samples[regulation_sample_counter] = sample_distance;
+
+        sequence_samples[sample_counter] = delta_sample;
+        regulation_samples[regulation_sample_counter] = delta_sample;
 
         sample_counter++;
         regulation_sample_counter++;
 
         if (regulation_sample_counter >= REGULATION_SAMPLES_COUNT) {
             regulation_sample_counter = 0;
-            // regulate
 
-            has_changed_polarisation = !has_changed_polarisation;
-            if (has_changed_polarisation) {
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 250);
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
-            } else {
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 750);
-            }
+            data_point_t point = {
+                .x = regulation_samples[REGULATION_SAMPLES_COUNT],
+                .v = (regulation_samples[REGULATION_SAMPLES_COUNT] - regulation_samples[REGULATION_SAMPLES_COUNT - 1])
+                     / DELTA_TIME,
+                .a = (regulation_samples[REGULATION_SAMPLES_COUNT] - 2 * regulation_samples[REGULATION_SAMPLES_COUNT - 1]
+                      + regulation_samples[REGULATION_SAMPLES_COUNT - 2])
+                     / (DELTA_TIME * DELTA_TIME),
+            };
+            float u = regulate(point);
+            regulation_setpoints[regulation_setpoints_counter] = u;
+            regulation_setpoints_counter++;
+
+            // if (u < 0) {
+            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, u);
+            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
+            // } else {
+            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
+            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, u);
+            // }
         }
 
         if (sample_counter >= SEQUENCE_SAMPLES_COUNT) {
             sample_counter = 0;
+            regulation_setpoints_counter = 0;
             regulation_completed(&sequence_process);
         }
         return;
@@ -150,11 +168,20 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-    if (Size == 1) {
-        dispatch_command_to_device((to_device_command_t) rx_buffer[0], NULL);
-    }
+    if (huart->Instance == uart.Instance) {
+        if (Size == 1) {
+            dispatch_command_to_device((to_device_command_t) rx_buffer[0], NULL);
+        }
 
-    HAL_UARTEx_ReceiveToIdle_IT(&huart1, rx_buffer, 64);
+        HAL_UARTEx_ReceiveToIdle_IT(&uart, rx_buffer, 64);
+    }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == uart.Instance) {
+        has_usart_dma_finished = true;
+    }
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)

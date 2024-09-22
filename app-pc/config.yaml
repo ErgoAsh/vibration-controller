@@ -1,0 +1,5 @@
+baud-rate: 115200
+data:
+  latest-csv: 2
+  use-interactive-menu: true
+serial-port: /dev/ttyUSB0
