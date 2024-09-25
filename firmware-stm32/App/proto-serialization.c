@@ -109,9 +109,43 @@ void wait_for_dma()
     has_usart_dma_finished = false;
 }
 
+float fir_coeff[16] = {
+    0.009374095127456596,
+    0.015248989077090274,
+    0.031685501000184441,
+    0.056109929517806932,
+    0.083909101523129026,
+    0.109443176158426622,
+    0.127342907899538227,
+    0.133772599392735642,
+    0.127342907899538227,
+    0.109443176158426636,
+    0.083909101523129040,
+    0.056109929517807001,
+    0.031685501000184454,
+    0.015248989077090261,
+    0.009374095127456596,
+};
+
+void fir_filter(float *input, float *output, int buffer_size, float *coeff, int tap_num)
+{
+    for (int i = 0; i < buffer_size; i++) {
+        output[i] = 0; // Wyzerowanie wartości wyjściowej dla każdej próbki
+
+        // Przeliczenie odpowiedzi filtra dla każdej próbki
+        for (int j = 0; j < tap_num; j++) {
+            if (i - j >= 0) { // Zapewniamy, że nie wyjdziemy poza zakres próbek
+                output[i] += coeff[j] * input[i - j];
+            }
+        }
+    }
+}
+
 void send_sequence_data()
 {
     float dt = DELTA_TIME; // Period between two measurements
+
+    //fir_filter(sequence_samples, sequence_samples, SEQUENCE_SAMPLES_COUNT, fir_coeff, 15);
 
     // Point without velocity or acceleration
     data_point_t p0 = {
@@ -121,6 +155,10 @@ void send_sequence_data()
         .a = 0,
         .u = regulation_setpoints[0],
     };
+#if !REGULATION_ENABLED
+    p0.u = 0;
+#endif
+
     memcpy(&frame[0], &p0.x, sizeof(float));
     memcpy(&frame[4], &p0.v, sizeof(float));
     memcpy(&frame[8], &p0.a, sizeof(float));
@@ -137,6 +175,10 @@ void send_sequence_data()
         .a = 0,
         .u = regulation_setpoints[0],
     };
+#if !REGULATION_ENABLED
+    p1.u = 0;
+#endif
+
     memcpy(&frame[0], &p1.x, sizeof(float));
     memcpy(&frame[4], &p1.v, sizeof(float));
     memcpy(&frame[8], &p1.a, sizeof(float));
@@ -151,6 +193,35 @@ void send_sequence_data()
         float v = (sequence_samples[i] - sequence_samples[i - 1]) / dt;
         float a = (sequence_samples[i] - 2 * sequence_samples[i - 1] + sequence_samples[i - 2]) / (dt * dt);
         float u = regulation_setpoints[i / 64]; // Division without remainder
+#if !REGULATION_ENABLED
+        u = 0;
+#endif
+
+        memcpy(&frame[0], &x, sizeof(float));
+        memcpy(&frame[4], &v, sizeof(float));
+        memcpy(&frame[8], &a, sizeof(float));
+        memcpy(&frame[12], &u, sizeof(float));
+
+        HAL_UART_Transmit_DMA(&uart, (uint8_t *) frame, sizeof(frame));
+        wait_for_dma();
+        //HAL_Delay(1);
+    }
+}
+
+void receive_individual_data()
+{
+    HAL_UART_Receive_DMA(&uart, (uint8_t *) frame, sizeof(frame));
+    wait_for_dma();
+
+    for (int i = 2; i < SEQUENCE_SAMPLES_COUNT; i++) {
+        float dt = DELTA_TIME; // Period between two measurements
+        float x = sequence_samples[i];
+        float v = (sequence_samples[i] - sequence_samples[i - 1]) / dt;
+        float a = (sequence_samples[i] - 2 * sequence_samples[i - 1] + sequence_samples[i - 2]) / (dt * dt);
+        float u = regulation_setpoints[i / 64]; // Division without remainder
+#if !REGULATION_ENABLED
+        u = 0;
+#endif
 
         memcpy(&frame[0], &x, sizeof(float));
         memcpy(&frame[4], &v, sizeof(float));

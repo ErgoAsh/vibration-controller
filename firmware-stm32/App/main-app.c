@@ -46,18 +46,17 @@ void on_initialize()
     HAL_TIM_PWM_Start(&timer_electromagnet_left, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&timer_electromagnet_right, TIM_CHANNEL_1);
 
-    HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
-
     init_positioner_process(&positioner_process);
     init_sequence_process(&sequence_process);
     test_knn();
+
+    dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "Device has started running\n\r");
 }
 
 bool has_changed_polarisation = false;
 void on_loop_tick()
 {
     dispatch_event(state_machines, 2);
-    //HAL_ADC_Start_IT(&hadc2);
 
     if (has_timer_tick1kHz_compared) {
         has_timer_tick1kHz_compared = false;
@@ -66,18 +65,12 @@ void on_loop_tick()
         if (tick_counter == 1000) {
             tick_counter = 0; // Executed every 1 s
 
-            // if (HAL_ADC_PollForConversion(&hadc2, 10) == HAL_OK) {
-            //     int32_t sample_value = (int32_t) HAL_ADC_GetValue(&hadc2);
-            //     float sample_voltage = map(sample_value, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
-            //     uint8_t message[32];
-            //     sprintf((char *) message, "ADC: %lu (%1.4f V)\n\r", sample_value, sample_voltage);
-            //     dispatch_command_to_device(COMMAND_PRINT, message);
-            //     HAL_ADC_Start(&hadc2);
-            // }
+            // use if needed
         }
     }
 }
 
+bool has_set_flag = false;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == timer_regulation.Instance) {
@@ -100,19 +93,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
     uint32_t value = HAL_ADC_GetValue(&hadc2);
-    // map value to real
+    HAL_ADC_Stop_IT(&hadc2);
 
     if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]) {
         float delta_sample = (float) value - calibration_mean;
 
-        // Use if you want real units (m, m/s, m/s^2)
-        // float sample_voltage = map(delta_sample, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
-        // float sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000;
-        // sequence_samples[sample_counter] = sample_distance;
-        // regulation_samples[regulation_sample_counter] = sample_distance;
-
+#if (USE_REAL_UNITS)
+        float sample_voltage = map(delta_sample, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
+        float sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000;
+        sequence_samples[sample_counter] = sample_distance;
+        regulation_samples[regulation_sample_counter] = sample_distance;
+#else
         sequence_samples[sample_counter] = delta_sample;
         regulation_samples[regulation_sample_counter] = delta_sample;
+#endif
 
         sample_counter++;
         regulation_sample_counter++;
@@ -128,17 +122,23 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
                       + regulation_samples[REGULATION_SAMPLES_COUNT - 2])
                      / (DELTA_TIME * DELTA_TIME),
             };
-            float u = regulate(point);
+#if (REGULATION_BY_SAMPLE_ARRAY_ENABLED)
+            float u = regulate_with_sample_data(point);
+#else
+            float u = regulate_individuals_data(point);
+#endif
             regulation_setpoints[regulation_setpoints_counter] = u;
             regulation_setpoints_counter++;
 
-            // if (u < 0) {
-            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, u);
-            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
-            // } else {
-            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
-            //     __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, u);
-            // }
+#if (REGULATION_ENABLED)
+            if (u < 0) {
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, u);
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
+            } else {
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, u);
+            }
+#endif
         }
 
         if (sample_counter >= SEQUENCE_SAMPLES_COUNT) {

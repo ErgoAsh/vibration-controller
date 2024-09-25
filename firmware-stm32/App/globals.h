@@ -7,13 +7,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define REGULATION_SAMPLES_COUNT 64UL
+#define REGULATION_ENABLED 1
+#define REGULATION_BY_SAMPLE_ARRAY_ENABLED 1
+#define USE_REAL_UNITS 0 // Use it if you want real units (m, m/s, m/s^2)
+
+#define INITIAL_LOCATION LOCATION_1
+#define TARGET_LOCATION LOCATION_3
+
+#define REGULATION_SAMPLES_COUNT 4UL
 #define CALIBRATION_SAMPLES_COUNT 1024UL
-#define SEQUENCE_SAMPLES_COUNT 4096UL
+#define SEQUENCE_SAMPLES_COUNT 8192UL
+
+#define POINTS_PER_INDIVIDUAL 4096 // TODO move to config
+
+typedef struct
+{
+    float x, v, a, u;
+} point_t;
 
 static const float SENSOR_SENSITIVITY = 0.56f / 1000.0f; // V/um
-static const uint32_t CALIBRATION_STAY_IN_PLACE_DELAY_MS = 10000;
-static const float DELTA_TIME = 0.001f; // Time between measurements
+static const float DELTA_TIME = 1 / 1000.0f;             // Time between measurements
+static const uint32_t CALIBRATION_STAY_IN_PLACE_DELAY_MS
+    = 1000; // It was equal to 10s but sending data takes very long time
 
 extern uint8_t rx_buffer[64];
 extern uint8_t tx_buffer[64];
@@ -28,6 +43,13 @@ extern volatile uint16_t calibration_samples[CALIBRATION_SAMPLES_COUNT];
 extern volatile float regulation_samples[REGULATION_SAMPLES_COUNT];
 extern volatile float regulation_setpoints[SEQUENCE_SAMPLES_COUNT / REGULATION_SAMPLES_COUNT];
 
+extern point_t individual[POINTS_PER_INDIVIDUAL];
+
+extern uint32_t sample_counter;
+extern uint32_t regulation_sample_counter;
+extern uint32_t regulation_setpoints_counter;
+
 extern uint32_t highest_fsm_id;
+extern float time_mean;
 
 #endif /* GLOBALS_H_ */

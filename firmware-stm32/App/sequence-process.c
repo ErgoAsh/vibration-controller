@@ -147,6 +147,8 @@ state_machine_result_t initial_position_exit_handler(state_machine_t *const stat
 {
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE,
                              "STATE: Initial position reached, waiting for system to stabilize...\n\r");
+    __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
     HAL_Delay(CALIBRATION_STAY_IN_PLACE_DELAY_MS);
     return EVENT_HANDLED;
 }
@@ -154,6 +156,12 @@ state_machine_result_t initial_position_exit_handler(state_machine_t *const stat
 state_machine_result_t calibration_entry_handler(state_machine_t *const state)
 {
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Start calibration\n\r");
+    sample_counter = 0;
+    regulation_sample_counter = 0;
+    regulation_setpoints_counter = 0;
+
+    HAL_ADC_Stop_IT(&hadc2);
+    HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
     HAL_TIM_Base_Start_IT(&timer_regulation);
     return EVENT_HANDLED;
 }
@@ -207,6 +215,10 @@ state_machine_result_t target_position_exit_handler(state_machine_t *const state
 state_machine_result_t measurement_regulation_entry_handler(state_machine_t *const state)
 {
     HAL_TIM_Base_Start_IT(&timer_regulation);
+    sample_counter = 0;
+    regulation_sample_counter = 0;
+    regulation_setpoints_counter = 0;
+
     return EVENT_HANDLED;
 }
 
@@ -235,6 +247,8 @@ state_machine_result_t data_sending_entry_handler(state_machine_t *const state)
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Plotting data...\n\r");
     dispatch_command_to_host(COMMAND_PLOT_DATA, NULL);
 
+    __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
     // TODO calculate new iteraton of array_n
 
     sequence_process_t *const process = (sequence_process_t *) state;
@@ -257,6 +271,24 @@ state_machine_result_t data_sending_handler(state_machine_t *const state)
 
 state_machine_result_t data_sending_exit_handler(state_machine_t *const state)
 {
-    HAL_Delay(1000);
+    HAL_Delay(500);
+
+    // clear data
+    for (int i = 0; i < SEQUENCE_SAMPLES_COUNT; i++) {
+        sequence_samples[i] = 0;
+    }
+
+    for (int i = 0; i < CALIBRATION_SAMPLES_COUNT; i++) {
+        calibration_samples[i] = 0;
+    }
+
+    for (int i = 0; i < REGULATION_SAMPLES_COUNT; i++) {
+        regulation_samples[i] = 0;
+    }
+
+    for (int i = 0; i < (SEQUENCE_SAMPLES_COUNT / REGULATION_SAMPLES_COUNT); i++) {
+        regulation_setpoints[i] = 0;
+    }
+
     return EVENT_HANDLED;
 }

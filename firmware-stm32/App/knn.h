@@ -9,6 +9,12 @@
 #define MAX_COMPARED_POINTS 8
 #define NUM_CLOSEST 4
 
+typedef enum {
+    X,
+    V,
+    A,
+} coordinate_t;
+
 typedef struct
 {
     int index;
@@ -18,7 +24,8 @@ typedef struct
 
 extern uint32_t time_elapsed[MAX_ITERATIONS];
 
-float regulate(data_point_t compared_point);
+float regulate_with_sample_data(data_point_t compared_point);
+float regulate_individuals_data(data_point_t compared_point);
 void test_knn();
 
 int find_closest_x(data_point_t arr[], int size, float target);

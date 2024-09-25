@@ -5,8 +5,10 @@ import struct
 import numpy as np
 import pandas as pd
 import serial
+from datetime import datetime
 from enums import ToHostCommand, ToDeviceCommand
 from config_handler import config, save_config
+from scipy.signal import hilbert
 
 # Initialize global variables
 data = pd.DataFrame(columns=("t", "x", "v", "a", "u"))
@@ -36,6 +38,7 @@ def receive_thread():
                 int.from_bytes(command_bytes, byteorder="little")
             )
         except:
+            print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
             print("Invalid command received")
             command = ToHostCommand.COMMAND_NONE_TO_HOST
 
@@ -50,9 +53,11 @@ def receive_thread():
                 handle_console_print()
 
             case ToHostCommand.COMMAND_GET_CONFIG:
+                print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
                 print("Config request fulfilled")
 
             case ToHostCommand.COMMAND_NONE_TO_HOST | _:
+                print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
                 print("No valid cmd")
 
         rx_done_event.set()
@@ -74,6 +79,7 @@ def handle_plot_data():
     length_bytes: bytes = ser.read(2)
     length: int = int.from_bytes(length_bytes, byteorder="little")
 
+    print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
     print("START: sending x v a u")
     for i in np.arange(0, length):
         buffer = ser.read(16)
@@ -82,6 +88,7 @@ def handle_plot_data():
         data.loc[i, "v"] = buffer_unpacked[1]
         data.loc[i, "a"] = buffer_unpacked[2]
         data.loc[i, "u"] = buffer_unpacked[3]
+    print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
     print("STOP: received x v a u")
 
     dt = 0.001
@@ -98,6 +105,7 @@ def handle_plot_data():
 def handle_console_print():
     length_bytes: bytes = ser.read(2)
     length: int = int.from_bytes(length_bytes, byteorder="little")
+    print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
     print(ser.read(length).decode(encoding="ascii"), end="")
 
 
@@ -111,6 +119,7 @@ def transmit_thread():
         except KeyboardInterrupt:
             sys.exit(0)
         except ValueError:
+            print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
             print("Invalid command sent")
 
 

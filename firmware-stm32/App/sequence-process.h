@@ -5,9 +5,6 @@
 #include "hsm.h"
 #include "positioner-process.h"
 
-const static positioner_location_t INITIAL_LOCATION = LOCATION_1;
-const static positioner_location_t TARGET_LOCATION = LOCATION_4;
-
 extern const state_t sequence_process_states[];
 
 //! List of process events

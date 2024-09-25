@@ -13,6 +13,9 @@ def load_config(config_file: str = "config.yaml"):
 
 def save_config(config_file: str = "config.yaml"):
     global config
+    if config is None:
+        return
+
     with open(config_file, "w") as f:
         config = yaml.dump(config, f)
         print("Config saved")

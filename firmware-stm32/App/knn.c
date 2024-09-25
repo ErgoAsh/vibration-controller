@@ -1,10 +1,12 @@
 #include "knn.h"
-#include "stm32h7xx_hal.h"
 
 #include "array_a.h"
 #include "array_v.h"
 #include "array_x.h"
+#include "globals.h"
+
 #include "math.h"
+#include "stm32h7xx_hal.h"
 #include "tim.h"
 
 #include <stdlib.h>
@@ -24,8 +26,12 @@ int result_indices_a[8];
 
 uint32_t iteration = 0;
 
-float regulate(data_point_t compared_point)
+float regulate_with_sample_data(data_point_t compared_point)
 {
+    sum_u = 0;
+    sum_distance = 0;
+    u = 0;
+
     find_closest_records_x(points_x, MAX_POINTS, compared_point.x, result_indices_x);
     find_closest_records_v(points_v, MAX_POINTS, compared_point.v, result_indices_v);
     find_closest_records_a(points_a, MAX_POINTS, compared_point.a, result_indices_a);
@@ -67,20 +73,25 @@ float regulate(data_point_t compared_point)
     return u;
 }
 
+float regulate_individuals_data(data_point_t compared_point)
+{
+    return 0;
+}
+
 void test_knn()
 {
     data_point_t compared_point = {0, 351.0, 112.0, 15.0};
 
     iteration = 0;
     for (iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-        sum_u = 0;
-        sum_distance = 0;
-        u = 0;
-
         uint32_t time_1 = 0;
         HAL_TIM_Base_Stop(&timer_software_profiler);
         HAL_TIM_Base_Start(&timer_software_profiler);
         __HAL_TIM_SET_COUNTER(&timer_software_profiler, 100);
+        sum_u = 0;
+        sum_distance = 0;
+        u = 0;
+
         find_closest_records_x(points_x, MAX_POINTS, compared_point.x, result_indices_x);
         find_closest_records_v(points_v, MAX_POINTS, compared_point.v, result_indices_v);
         find_closest_records_a(points_a, MAX_POINTS, compared_point.a, result_indices_a);
@@ -131,6 +142,8 @@ void test_knn()
 
 void calculate_distance(data_point_t *point, float target_x, float target_v, float target_a)
 {
+    target_v /= 1000;
+    target_a /= 1000000;
     point->distance = sqrt((point->x - target_x) * (point->x - target_x) + (point->v - target_v) * (point->v - target_v)
                            + (point->a - target_a) * (point->a - target_a));
 }

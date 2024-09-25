@@ -35,11 +35,13 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
                 "* Positioner state = %s\n\r"
                 "* Positioner location = %s\n\r"
                 "* Sequence state = %s\n\r"
-                "* Calibration mean value = %f\n\r\n\r",
+                "* Calibration mean value = %f\n\r"
+                "* Mean regulation time = %f us\n\r\n\r",
                 get_positioner_state_string(&positioner_process),
                 get_positioner_location_string(&positioner_process),
                 get_sequence_state_string(&sequence_process),
-                calibration_mean);
+                calibration_mean,
+                time_mean);
 
         dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, buffer);
         break;
@@ -50,6 +52,8 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
 
     case COMMAND_RESTART_DEVICE:
         NVIC_SystemReset();
+
+    case COMMAND_SET_INDIVIDUAL:
 
     default:
     case COMMAND_NONE_TO_DEVICE:

@@ -1,5 +1,5 @@
 baud-rate: 115200
 data:
-  latest-csv: 2
+  latest-csv: 44
   use-interactive-menu: true
 serial-port: /dev/ttyUSB0
