@@ -47,7 +47,9 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
         break;
 
     case COMMAND_EXECUTE_SEQUENCE:
+        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "START: sending individuals\n\r");
         initiate_sequence(&sequence_process, 5);
+        dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STOP: individuals sent\n\r");
         break;
 
     case COMMAND_RESTART_DEVICE:
