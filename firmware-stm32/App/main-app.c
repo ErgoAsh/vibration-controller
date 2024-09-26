@@ -132,7 +132,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 #if (REGULATION_ENABLED)
             if (u < 0) {
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, u);
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, -u);
                 __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
             } else {
                 __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);

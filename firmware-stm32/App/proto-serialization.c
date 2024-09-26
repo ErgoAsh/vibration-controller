@@ -4,9 +4,6 @@
 #include "knn.h"
 #include "usart.h"
 
-ssize_t buffer_len = 0;
-uint8_t buf[4096];
-
 // Original solution: https://community.st.com/t5/stm32-mcus/dma-is-not-working-on-stm32h7-devices/ta-p/49498
 // DMA cannot access 0x20000000 so we have to manually change it to 0x24000000
 // Add this to .ld linker file when CubeMX override it:
@@ -19,7 +16,7 @@ uint8_t buf[4096];
 #else
 #define DMA_BUFFER __attribute__((section(".dma_buffer")))
 #endif
-DMA_BUFFER uint8_t frame[16];
+volatile DMA_BUFFER uint8_t frame[16];
 
 int serialize_sequence_data(uint8_t *output_buffer, size_t *output_buffer_len)
 {

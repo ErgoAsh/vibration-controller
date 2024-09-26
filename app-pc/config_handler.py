@@ -17,7 +17,7 @@ def save_config(config_file: str = "config.yaml"):
         return
 
     with open(config_file, "w") as f:
-        config = yaml.dump(config, f)
+        config = yaml.dump(config, f, default_flow_style=True)
         print("Config saved")
 
 

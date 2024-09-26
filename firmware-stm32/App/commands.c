@@ -55,7 +55,8 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
     case COMMAND_RESTART_DEVICE:
         NVIC_SystemReset();
 
-    case COMMAND_SET_INDIVIDUAL:
+    case COMMAND_SET_INDIVIDUAL_ARRAY:
+        break;
 
     default:
     case COMMAND_NONE_TO_DEVICE:
@@ -87,7 +88,7 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
         }
         break;
 
-    case COMMAND_PLOT_DATA:
+    case COMMAND_SET_RESPONSE_DATA:
         length = SEQUENCE_SAMPLES_COUNT;
 
         memcpy(length_buffer, &length, 2);

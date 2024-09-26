@@ -7,3 +7,4 @@ data:
   latest-csv: 0
   population-size: 50
   mutation-rate: 0.001
+

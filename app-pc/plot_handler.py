@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
+from config_handler import config
 from scipy.signal import hilbert
 from scipy.signal import find_peaks
 from scipy.interpolate import interp1d
@@ -66,6 +67,8 @@ def plot_interactive(data: pd.DataFrame):
         axes[i].grid(linestyle=":", which="major", color="darkgrey")
         axes[i].grid(linestyle=":", which="minor", color="whitesmoke")
         axes[i].autoscale(enable=True, axis="x", tight=True)
+
+    # if config["always-show-plot"]:
     plt.show()
 
     """

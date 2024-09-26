@@ -245,7 +245,7 @@ state_machine_result_t measurement_regulation_exit_handler(state_machine_t *cons
 state_machine_result_t data_sending_entry_handler(state_machine_t *const state)
 {
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Plotting data...\n\r");
-    dispatch_command_to_host(COMMAND_PLOT_DATA, NULL);
+    dispatch_command_to_host(COMMAND_SET_RESPONSE_DATA, NULL);
 
     __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
     __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
