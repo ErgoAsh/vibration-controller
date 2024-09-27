@@ -18,7 +18,7 @@ float best_u[MAX_ITERATIONS];
 
 float sum_u = 0;
 float sum_distance = 0;
-float u = 0;
+float u_value = 0;
 
 int result_indices_x[8];
 int result_indices_v[8];
@@ -30,7 +30,7 @@ float regulate_with_sample_data(data_point_t compared_point)
 {
     sum_u = 0;
     sum_distance = 0;
-    u = 0;
+    u_value = 0;
 
     find_closest_records_x(points_x, MAX_POINTS, compared_point.x, result_indices_x);
     find_closest_records_v(points_v, MAX_POINTS, compared_point.v, result_indices_v);
@@ -64,18 +64,13 @@ float regulate_with_sample_data(data_point_t compared_point)
     sum_distance += points[2].distance;
     sum_distance += points[3].distance;
 
-    u += (points[0].u * points[0].distance) / sum_distance;
-    u += (points[1].u * points[1].distance) / sum_distance;
-    u += (points[2].u * points[2].distance) / sum_distance;
-    u += (points[3].u * points[3].distance) / sum_distance;
-    u = u / 4;
+    u_value += (points[0].u * points[0].distance) / sum_distance;
+    u_value += (points[1].u * points[1].distance) / sum_distance;
+    u_value += (points[2].u * points[2].distance) / sum_distance;
+    u_value += (points[3].u * points[3].distance) / sum_distance;
+    u_value = u_value / 4;
 
-    return u;
-}
-
-float regulate_individuals_data(data_point_t compared_point)
-{
-    return 0;
+    return u_value;
 }
 
 void test_knn()
@@ -88,47 +83,9 @@ void test_knn()
         HAL_TIM_Base_Stop(&timer_software_profiler);
         HAL_TIM_Base_Start(&timer_software_profiler);
         __HAL_TIM_SET_COUNTER(&timer_software_profiler, 100);
-        sum_u = 0;
-        sum_distance = 0;
-        u = 0;
 
-        find_closest_records_x(points_x, MAX_POINTS, compared_point.x, result_indices_x);
-        find_closest_records_v(points_v, MAX_POINTS, compared_point.v, result_indices_v);
-        find_closest_records_a(points_a, MAX_POINTS, compared_point.a, result_indices_a);
-
-        data_point_t points[MAX_COMPARED_POINTS * 3];
-        for (int i = 0; i < MAX_COMPARED_POINTS; i++) {
-            points[i] = points_x[result_indices_x[MAX_COMPARED_POINTS * 1 - i]];
-            calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
-        }
-
-        for (int i = MAX_COMPARED_POINTS; i < MAX_COMPARED_POINTS * 2; i++) {
-            points[i] = points_v[result_indices_v[MAX_COMPARED_POINTS * 2 - i]];
-            calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
-        }
-
-        for (int i = MAX_COMPARED_POINTS * 2; i < MAX_COMPARED_POINTS * 3; i++) {
-            points[i] = points_a[result_indices_a[MAX_COMPARED_POINTS * 3 - i]];
-            calculate_distance(&points[i], compared_point.x, compared_point.v, compared_point.a);
-        }
-
-        qsort(points, MAX_COMPARED_POINTS * 3, sizeof(data_point_t), compare_points);
-
-        sum_u += points[0].u;
-        sum_u += points[1].u;
-        sum_u += points[2].u;
-        sum_u += points[3].u;
-
-        sum_distance += points[0].distance;
-        sum_distance += points[1].distance;
-        sum_distance += points[2].distance;
-        sum_distance += points[3].distance;
-
-        u += (points[0].u * points[0].distance) / sum_distance;
-        u += (points[1].u * points[1].distance) / sum_distance;
-        u += (points[2].u * points[2].distance) / sum_distance;
-        u += (points[3].u * points[3].distance) / sum_distance;
-        u = u / 4;
+        u_value = regulate_with_sample_data(compared_point);
+        best_u[iteration] = u_value;
 
         uint32_t time_2 = __HAL_TIM_GET_COUNTER(&timer_software_profiler);
         HAL_TIM_Base_Stop(&timer_software_profiler);
@@ -142,8 +99,10 @@ void test_knn()
 
 void calculate_distance(data_point_t *point, float target_x, float target_v, float target_a)
 {
+#if !USE_REAL_UNITS
     target_v /= 1000;
     target_a /= 1000000;
+#endif
     point->distance = sqrt((point->x - target_x) * (point->x - target_x) + (point->v - target_v) * (point->v - target_v)
                            + (point->a - target_a) * (point->a - target_a));
 }
@@ -270,6 +229,21 @@ void find_closest_records_a(data_point_t arr[], int size, float target, int resu
             break;
         }
     }
+}
+
+data_point_t *get_points_sorted_by_x()
+{
+    return points_x;
+}
+
+data_point_t *get_points_sorted_by_v()
+{
+    return points_v;
+}
+
+data_point_t *get_points_sorted_by_a()
+{
+    return points_a;
 }
 
 //

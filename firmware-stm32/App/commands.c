@@ -54,8 +54,10 @@ void dispatch_command_to_device(to_device_command_t command, void *parameter)
 
     case COMMAND_RESTART_DEVICE:
         NVIC_SystemReset();
+        break;
 
     case COMMAND_SET_INDIVIDUAL_ARRAY:
+        receive_individual_data();
         break;
 
     default:

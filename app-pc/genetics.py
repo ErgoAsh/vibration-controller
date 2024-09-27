@@ -2,18 +2,19 @@ from __future__ import annotations
 import os
 import numpy as np
 import random
-import yaml
 import threading
 import pandas as pd
-from collections import defaultdict
 from enums import ToDeviceCommand
-from config_handler import config, get_updated_dict, save_config
-from scipy.signal import hilbert
+from config_handler import config, save_config
 from scipy.signal import find_peaks
 from scipy.interpolate import interp1d
 
 
 class Individual:
+    _regulation_data: pd.DataFrame = pd.DataFrame()
+    _response_data: pd.DataFrame = pd.DataFrame()
+    _has_received_response: bool = False
+
     def __init__(
         self,
         x=None,
@@ -30,6 +31,7 @@ class Individual:
 
         if response_data is not None:
             self.response_data = response_data.copy()
+            self.has_received_response = True
         else:
             self.load_response()
 
@@ -44,24 +46,32 @@ class Individual:
 
     @property
     def regulation_data(self):
-        return self._name
+        return self._regulation_data
 
     @regulation_data.setter
     def regulation_data(self, value):
-        self._name = value
+        self._regulation_data = value
 
     @property
     def response_data(self):
-        return self._name
+        return self._response_data
 
     @response_data.setter
     def response_data(self, value):
-        self._name = value
+        self._response_data = value
+
+    @property
+    def has_received_response(self):
+        return self._has_received_response
+
+    @has_received_response.setter
+    def has_received_response(self, value):
+        self._has_received_response = value
 
     def load_response(self):
         try:
             self.regulation_data = pd.read_csv(
-                f"./generations/{self.generation_id}/{self.individual_id}_response.csv"
+                f"./generations/gen_{self.generation_id}/{self.individual_id}_response.csv"
             )
         except FileNotFoundError:
             pass
@@ -69,65 +79,73 @@ class Individual:
     def load_regulation(self):
         try:
             self.regulation_data = pd.read_csv(
-                f"./generations/{self.generation_id}/{self.individual_id}_regulation.csv"
+                f"./generations/gen_{self.generation_id}/{self.individual_id}_regulation.csv"
             )
+            self.has_received_response = True
         except FileNotFoundError:
             pass
 
     def save_regulation(self):
         self.response_data.to_csv(
-            f"./generations/{self.generation_id}/{self.individual_id}_regulation.csv"
+            f"./generations/gen_{self.generation_id}/{self.individual_id}_regulation.csv"
         )
 
     def save_response(self):
         if self.response_data is not None:
-            if not os.path.exists(f"./generations/{self.generation_id}/"):
-                os.makedirs(f"./generations/{self.generation_id}/")
+            if not os.path.exists(f"./generations/gen_{self.generation_id}/"):
+                os.makedirs(f"./generations/gen_{self.generation_id}/")
 
             self.response_data.to_csv(
-                f"./generations/{self.generation_id}/{self.individual_id}_response.csv"
+                f"./generations/gen_{self.generation_id}/{self.individual_id}_response.csv"
             )
 
             if "generations" not in config:
                 config["generations"] = dict()
 
-            if self.generation_id not in config["generations"]:
-                config["generations"][self.generation_id] = dict()
+            if f"gen_{self.generation_id}" not in config["generations"]:
+                config["generations"][f"gen_{self.generation_id}"] = dict()
 
-            config["generations"][self.generation_id][self.individual_id] = {
-                "t_reg": self.calc_t_reg(),
-                "x_at_8": self.calc_x_at_8(),
-                "x_max": self.calc_x_max(),
-            }
+            if (
+                self.individual_id
+                not in config["generations"][f"gen_{self.generation_id}"]
+            ):
+                config["generations"][f"gen_{self.generation_id}"][
+                    self.individual_id
+                ] = dict()
+
+            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
+                "t_reg"
+            ] = self.calc_t_reg()
+
+            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
+                "x_at_8"
+            ] = self.calc_x_at_8()
+
+            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
+                "x_max"
+            ] = self.calc_x_max()
+
             save_config()
+            self.has_received_response = True
 
     def generate_new_regulation_data(self, x=None, v=None, a=None, u=None):
         regulation_data = pd.DataFrame()
         regulation_data["x"] = (
-            x if x is not None else np.random.uniform(-4000, 4000, 1000)
+            x if x is not None else np.random.uniform(-4000, 4000, 4096)
         )
         regulation_data["v"] = (
-            v if v is not None else np.random.uniform(-4000, 4000, 1000)
+            v if v is not None else np.random.uniform(-4000, 4000, 4096)
         )
         regulation_data["a"] = (
-            a if a is not None else np.random.uniform(-4000, 4000, 1000)
+            a if a is not None else np.random.uniform(-4000, 4000, 4096)
         )
         regulation_data["u"] = (
-            u if u is not None else np.random.uniform(-1000, 1000, 1000)
+            u if u is not None else np.random.uniform(-1000, 1000, 4096)
         )
         return regulation_data
 
-    def has_received_response(self):
-        return self.received_response
-
     def get_id(self):
         return self.individual_id
-
-    def get_regulation_data(self):
-        return self.regulation_data
-
-    def get_response_data(self):
-        return self.regulation_data
 
     def get_x(self, x):
         return self.regulation_data["x"]
@@ -159,60 +177,66 @@ class Individual:
         return ts + 10 * x8
 
     def calc_peaks(self):
-        peaks, _ = find_peaks(self.get_response_data()["x"], prominence=500)
-        min_peaks, _ = find_peaks(-self.get_response_data()["x"], prominence=500)
+        peaks, _ = find_peaks(self.response_data["x"], prominence=250)
+        min_peaks, _ = find_peaks(-self.response_data["x"], prominence=250)
 
         # Find all positive peaks
         interp_upper = interp1d(
-            self.get_response_data()["t"].iloc[peaks],
-            self.get_response_data()["x"].iloc[peaks],
+            self.response_data["t"].iloc[peaks],
+            self.response_data["x"].iloc[peaks],
             kind="linear",
             fill_value="extrapolate",
         )
 
         # Find all negitive peaks
         interp_lower = interp1d(
-            self.get_response_data()["t"].iloc[min_peaks],
-            self.get_response_data()["x"].iloc[min_peaks],
+            self.response_data["t"].iloc[min_peaks],
+            self.response_data["x"].iloc[min_peaks],
             kind="linear",
             fill_value="extrapolate",
         )
 
-        self.get_response_data()["x_up"] = interp_upper(self.get_response_data()["t"])
-        self.get_response_data()["x_down"] = interp_lower(self.get_response_data()["t"])
+        self.response_data["x_up"] = interp_upper(self.response_data["t"])
+        self.response_data["x_down"] = interp_lower(self.response_data["t"])
 
     def calc_t_reg(self):
         if "x_up" not in self.response_data.columns:
             self.calc_peaks()
 
         x_threshold = 0.15 * self.calc_x_max()
-        t_calibration = self.get_response_data()["t"].iloc[
-            np.argmax(self.get_response_data()["x_up"] < x_threshold)
+        t_calibration: np.float32 = self.response_data["t"].iloc[
+            np.argmax(self.response_data["x_up"] < x_threshold)
         ]
-        return t_calibration
+
+        result = t_calibration.item()
+        if result <= 0:
+            result = 8192 * 0.001
+
+        return result
 
     def calc_x_at_8(self):
         if "x_up" not in self.response_data.columns:
             self.calc_peaks()
 
-        x_end = (
-            self.get_response_data()["x_up"].iloc[-1]
-            - self.get_response_data()["x_down"].iloc[-1]
+        # Could be -1 but using the very last point might be risky
+        x_end: np.float32 = (
+            self.response_data["x_up"].iloc[-25]
+            - self.response_data["x_down"].iloc[-25]
         )
-        return x_end
+        return x_end.item()
 
     def calc_x_max(self):
-        return np.max(self.get_response_data()["x"])
+        return np.max(self.response_data["x"]).item()
 
     def crossover(self, other: Individual):
         alpha = random.random()
-        child1 = Individual(regulation_data=self.get_regulation_data())
+        child1 = Individual(regulation_data=self.regulation_data)
         child1.set_x(alpha * self.get_x() + (1 - alpha) * other.get_x())
         child1.set_v(alpha * self.get_v() + (1 - alpha) * other.get_v())
         child1.set_a(alpha * self.get_a() + (1 - alpha) * other.get_a())
         child1.set_u(alpha * self.get_u() + (1 - alpha) * other.get_u())
 
-        child2 = Individual(regulation_data=other.get_regulation_data())
+        child2 = Individual(regulation_data=other.regulation_data)
         child2.set_x((1 - alpha) * self.get_x() + alpha * other.get_x())
         child2.set_v((1 - alpha) * self.get_v() + alpha * other.get_v())
         child2.set_a((1 - alpha) * self.get_a() + alpha * other.get_a())
@@ -246,7 +270,7 @@ def genetic_thread():
     while True:
         for individual in population:
             current_individual = individual
-            if individual.has_received_response():
+            if individual.has_received_response:
                 continue
 
             genetics_event.clear()

@@ -4,7 +4,7 @@ import pandas as pd
 import serial
 from datetime import datetime
 from config_handler import config
-from enums import ToHostCommand
+from enums import ToHostCommand, ToDeviceCommand
 
 # Initialize global variables
 data = pd.DataFrame(columns=("t", "x", "v", "a", "u"))
@@ -16,6 +16,7 @@ ser: serial.Serial = None
 
 def init_serial():
     global ser
+
     with serial.Serial(
         config["serial-port"],
         config["baud-rate"],
@@ -56,7 +57,7 @@ def transmit_thread():
     while True:
         try:
             rx_done_event.clear()
-            command = int(input("New command: "))
+            command = ToDeviceCommand(int(input("New command: ")))
             execute_to_device_command(command)
 
             rx_done_event.wait(15)

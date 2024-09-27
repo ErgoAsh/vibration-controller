@@ -9,9 +9,13 @@ def execute_to_device_command(
 ):
     match command:
         case ToDeviceCommand.COMMAND_SET_REGULATION_DATA:
+            print("Send current individual data")
             cmd.handle_set_regulation_data(individual)
+
         case ToDeviceCommand.COMMAND_START_GENETIC_ALGORITHM:
+            print("Start genetic algorithm")
             cmd.handle_start_genetic_algorithm()
+
         case _:
             cmd.handle_return_command_to_device(command)
 

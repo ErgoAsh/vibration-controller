@@ -23,7 +23,8 @@ bool has_timer_tick1kHz_compared = false;
 
 uint8_t rx_buffer[64];
 uint8_t tx_buffer[64];
-bool has_usart_dma_finished = false;
+bool has_usart_dma_rx_finished = false;
+bool has_usart_dma_tx_finished = false;
 
 volatile float sequence_samples[SEQUENCE_SAMPLES_COUNT];
 volatile uint16_t calibration_samples[CALIBRATION_SAMPLES_COUNT];
@@ -53,7 +54,6 @@ void on_initialize()
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "Device has started running\n\r");
 }
 
-bool has_changed_polarisation = false;
 void on_loop_tick()
 {
     dispatch_event(state_machines, 2);
@@ -70,7 +70,6 @@ void on_loop_tick()
     }
 }
 
-bool has_set_flag = false;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == timer_regulation.Instance) {
@@ -111,6 +110,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
         sample_counter++;
         regulation_sample_counter++;
 
+        //if (sample_counter >= 3) {
         if (regulation_sample_counter >= REGULATION_SAMPLES_COUNT) {
             regulation_sample_counter = 0;
 
@@ -131,13 +131,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
             regulation_setpoints_counter++;
 
 #if (REGULATION_ENABLED)
+
             if (u < 0) {
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, -u);
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, (int) roundf(-u));
                 __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, 0);
             } else {
                 __HAL_TIM_SET_COMPARE(&timer_electromagnet_left, TIM_CHANNEL_1, 0);
-                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, u);
+                __HAL_TIM_SET_COMPARE(&timer_electromagnet_right, TIM_CHANNEL_1, (int) roundf(u));
             }
+
 #endif
         }
 
@@ -171,16 +173,24 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     if (huart->Instance == uart.Instance) {
         if (Size == 1) {
             dispatch_command_to_device((to_device_command_t) rx_buffer[0], NULL);
+            HAL_UARTEx_ReceiveToIdle_IT(&uart, rx_buffer, 64);
+        } else {
+            int a = 0;
         }
+    }
+}
 
-        HAL_UARTEx_ReceiveToIdle_IT(&uart, rx_buffer, 64);
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == uart.Instance) {
+        has_usart_dma_rx_finished = true;
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == uart.Instance) {
-        has_usart_dma_finished = true;
+        has_usart_dma_tx_finished = true;
     }
 }
 

@@ -115,6 +115,7 @@ void movement_completed(sequence_process_t *const process)
 void measurement_completed(sequence_process_t *const process)
 {
     process->machine.Event = MEASUREMENT_COMPLETED;
+    dispatch_event(state_machines, 2); // It does not work correctly without it (because of delays?)
 }
 
 void regulation_completed(sequence_process_t *const process)

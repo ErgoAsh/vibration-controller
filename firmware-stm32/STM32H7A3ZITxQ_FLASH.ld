@@ -175,9 +175,9 @@ SECTIONS
     . = ALIGN(8);
   } >DTCMRAM
 
-  .dma_buffer : /* Space before ':' is critical */
+  .large_buffer : /* Space before ':' is critical */
   {
-    *(.dma_buffer)
+    *(.large_buffer)
   } >RAM
 
   /* Remove information from the standard libraries */

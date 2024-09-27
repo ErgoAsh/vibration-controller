@@ -1,9 +1,14 @@
-serial-port: /dev/ttyACM0
-baud-rate: 921600
-use-interactive-menu: true
 always-show-plot: true
-
+baud-rate: 921600
 data:
-  latest-csv: 0
-  population-size: 50
+  latest-generation: 0
   mutation-rate: 0.001
+  population-size: 50
+generations:
+  gen_0:
+    0:
+      t_reg: 8.192
+      x_at_8: 21631.68831168831
+      x_max: 8109.34375
+serial-port: /dev/ttyACM1
+use-interactive-menu: true

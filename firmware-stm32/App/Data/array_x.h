@@ -1,7 +1,7 @@
 #ifndef ARRAY_X_H_
 #define ARRAY_X_H_
 
-__attribute__((section(".text"))) data_point_t points_x[4096] = {
+__attribute__((section(".large_buffer"))) data_point_t points_x[4096] = {
     {0, -6588.99482758621, 7, 87, -903},
     {1, -6581.99482758621, 94, 80, -677},
     {2, -6487.99482758621, 174, 60, -480},
