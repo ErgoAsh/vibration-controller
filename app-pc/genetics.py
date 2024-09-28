@@ -182,7 +182,7 @@ class Individual:
     def fitness(self):
         ts = self.calc_t_reg()
         x8 = self.calc_x_at_8()
-        return ts + 10 * x8
+        return ts + 8.192 * x8
 
     def calc_peaks(self):
         peaks, _ = find_peaks(self.response_data["x"], prominence=100, distance=50)
@@ -236,8 +236,9 @@ class Individual:
         x_end: np.float32 = (
             self.response_data["x_up"].iloc[-25]
             - self.response_data["x_down"].iloc[-25]
-        )
-        return x_end.item()
+        ) / 2
+
+        return (x_end / self.calc_x_max()).item()
 
     def calc_x_max(self):
         return np.max(np.abs(self.response_data["x"])).item()
@@ -302,7 +303,7 @@ def genetic_thread():
                 ToDeviceCommand.COMMAND_SET_REGULATION_DATA, individual
             )
 
-            sleep(1.5)
+            sleep(6)
 
             # get respons data
             execute_to_device_command(ToDeviceCommand.COMMAND_MOVE_TO_START)
