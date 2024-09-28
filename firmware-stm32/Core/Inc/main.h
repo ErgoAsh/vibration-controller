@@ -60,8 +60,6 @@ void Error_Handler(void);
 #define BLUE_PUSH_BUTTON_Pin GPIO_PIN_13
 #define BLUE_PUSH_BUTTON_GPIO_Port GPIOC
 #define BLUE_PUSH_BUTTON_EXTI_IRQn EXTI15_10_IRQn
-#define USB_FS_PWR_EN_Pin GPIO_PIN_10
-#define USB_FS_PWR_EN_GPIO_Port GPIOF
 #define PH0_MCU_Pin GPIO_PIN_0
 #define PH0_MCU_GPIO_Port GPIOH
 #define PH1_MCU_Pin GPIO_PIN_1
@@ -92,14 +90,6 @@ void Error_Handler(void);
 #define STLINK_TX_GPIO_Port GPIOD
 #define ELECTROMAGNET_LEFT_Pin GPIO_PIN_6
 #define ELECTROMAGNET_LEFT_GPIO_Port GPIOC
-#define USB_FS_VBUS_Pin GPIO_PIN_9
-#define USB_FS_VBUS_GPIO_Port GPIOA
-#define USB_FS_ID_Pin GPIO_PIN_10
-#define USB_FS_ID_GPIO_Port GPIOA
-#define USB_FS_N_Pin GPIO_PIN_11
-#define USB_FS_N_GPIO_Port GPIOA
-#define USB_FS_P_Pin GPIO_PIN_12
-#define USB_FS_P_GPIO_Port GPIOA
 #define POSITIONER_1_Pin GPIO_PIN_0
 #define POSITIONER_1_GPIO_Port GPIOD
 #define POSITIONER_1_EXTI_IRQn EXTI0_IRQn

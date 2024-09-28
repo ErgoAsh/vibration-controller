@@ -32,7 +32,7 @@ typedef struct _data_point_t
 static const float SENSOR_SENSITIVITY = 0.56f / 1000.0f; // V/um
 static const float DELTA_TIME = 1 / 1000.0f;             // Time between measurements
 static const uint32_t CALIBRATION_STAY_IN_PLACE_DELAY_MS
-    = 1000; // It was equal to 10s but sending data takes very long time
+    = 2500; // It was equal to 10s but sending data takes very long time
 
 extern state_machine_t *state_machines[];
 extern uint8_t rx_buffer[64];

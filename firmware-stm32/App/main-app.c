@@ -58,16 +58,16 @@ void on_loop_tick()
 {
     dispatch_event(state_machines, 2);
 
-    if (has_timer_tick1kHz_compared) {
-        has_timer_tick1kHz_compared = false;
+    // if (has_timer_tick1kHz_compared) {
+    //     has_timer_tick1kHz_compared = false;
 
-        tick_counter++;
-        if (tick_counter == 1000) {
-            tick_counter = 0; // Executed every 1 s
+    //     tick_counter++;
+    //     if (tick_counter == 1000) {
+    //         tick_counter = 0; // Executed every 1 s
 
-            // use if needed
-        }
-    }
+    //         // use if needed
+    //     }
+    // }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)

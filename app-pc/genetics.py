@@ -303,10 +303,11 @@ def genetic_thread():
                 ToDeviceCommand.COMMAND_SET_REGULATION_DATA, individual
             )
 
-            sleep(6)
+            sleep(1.5)
 
             # get respons data
             execute_to_device_command(ToDeviceCommand.COMMAND_MOVE_TO_START)
+
             genetics_event.wait()
 
         print(f"Responses from gen_{generation_id} has been received")

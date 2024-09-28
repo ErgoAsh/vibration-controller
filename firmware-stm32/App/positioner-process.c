@@ -192,6 +192,18 @@ state_machine_result_t move_left_handler(state_machine_t *const state)
     positioner_process_t *const process = (positioner_process_t *) state;
 
     switch (process->machine.Event) {
+    case STARTED_MOVING:
+        if (process->current_position == process->target_position) {
+            return EVENT_HANDLED;
+        }
+
+        if (process->current_position < process->target_position) {
+            return switch_state(state, &positioner_process_states[MOVING_RIGHT_STATE]);
+        } else {
+            return EVENT_HANDLED;
+        };
+        break;
+
     case NEW_POSITION_REACHED:
         if (process->current_position < process->target_position) {
             return switch_state(state, &positioner_process_states[MOVING_RIGHT_STATE]);
@@ -241,6 +253,18 @@ state_machine_result_t move_right_handler(state_machine_t *const state)
     positioner_process_t *const process = (positioner_process_t *) state;
 
     switch (process->machine.Event) {
+    case STARTED_MOVING:
+        if (process->current_position == process->target_position) {
+            return EVENT_HANDLED;
+        }
+
+        if (process->current_position < process->target_position) {
+            return EVENT_HANDLED;
+        } else {
+            return switch_state(state, &positioner_process_states[MOVING_LEFT_STATE]);
+        };
+        break;
+
     case NEW_POSITION_REACHED:
         if (process->current_position > process->target_position) {
             return switch_state(state, &positioner_process_states[MOVING_LEFT_STATE]);

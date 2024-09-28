@@ -115,12 +115,15 @@ void movement_completed(sequence_process_t *const process)
 void measurement_completed(sequence_process_t *const process)
 {
     process->machine.Event = MEASUREMENT_COMPLETED;
-    dispatch_event(state_machines, 2); // It does not work correctly without it (because of delays?)
+    HAL_TIM_Base_Stop_IT(&timer_1kHz);
+    HAL_ADC_Stop_IT(&hadc2);
 }
 
 void regulation_completed(sequence_process_t *const process)
 {
     process->machine.Event = REGULATION_COMPLETED;
+    HAL_TIM_Base_Stop_IT(&timer_1kHz);
+    HAL_ADC_Stop_IT(&hadc2);
 }
 
 state_machine_result_t initial_position_entry_handler(state_machine_t *const state)
@@ -163,7 +166,7 @@ state_machine_result_t calibration_entry_handler(state_machine_t *const state)
 
     HAL_ADC_Stop_IT(&hadc2);
     HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
-    HAL_TIM_Base_Start_IT(&timer_regulation);
+    HAL_TIM_Base_Start_IT(&timer_1kHz);
     return EVENT_HANDLED;
 }
 
@@ -183,7 +186,7 @@ state_machine_result_t calibration_handler(state_machine_t *const state)
 state_machine_result_t calibration_exit_handler(state_machine_t *const state)
 {
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Calibration finished\n\r");
-    HAL_TIM_Base_Stop_IT(&timer_regulation);
+    HAL_TIM_Base_Stop_IT(&timer_1kHz);
     return EVENT_HANDLED;
 }
 
@@ -215,7 +218,7 @@ state_machine_result_t target_position_exit_handler(state_machine_t *const state
 
 state_machine_result_t measurement_regulation_entry_handler(state_machine_t *const state)
 {
-    HAL_TIM_Base_Start_IT(&timer_regulation);
+    HAL_TIM_Base_Start_IT(&timer_1kHz);
     sample_counter = 0;
     regulation_sample_counter = 0;
     regulation_setpoints_counter = 0;
@@ -238,7 +241,7 @@ state_machine_result_t measurement_regulation_handler(state_machine_t *const sta
 
 state_machine_result_t measurement_regulation_exit_handler(state_machine_t *const state)
 {
-    HAL_TIM_Base_Stop_IT(&timer_regulation);
+    HAL_TIM_Base_Stop_IT(&timer_1kHz);
     dispatch_command_to_host(COMMAND_PRINT_ON_CONSOLE, "STATE: Regulation finished\n\r");
     return EVENT_HANDLED;
 }
@@ -272,7 +275,7 @@ state_machine_result_t data_sending_handler(state_machine_t *const state)
 
 state_machine_result_t data_sending_exit_handler(state_machine_t *const state)
 {
-    HAL_Delay(500);
+    //HAL_Delay(500);
 
     // clear data
     for (int i = 0; i < SEQUENCE_SAMPLES_COUNT; i++) {
