@@ -13,7 +13,13 @@
         {
             "label": "Show plot",
             "type": "shell",
-            "command": "python show_data.py ${input:plotNumberInput}",
+            "command": "python show_data.py ${input:generationIdInput} ${input:individualIdInput}",
+            "problemMatcher": []
+        },
+        {
+            "label": "Show progression",
+            "type": "shell",
+            "command": "python show_progression.py",
             "problemMatcher": []
         }
     ],
@@ -27,8 +33,13 @@
             ]
         },
         {
-            "id": "plotNumberInput",
-            "description": "Enter number of desired plot",
+            "id": "generationIdInput",
+            "description": "Enter generation number",
+            "type": "promptString"
+        },
+        {
+            "id": "individualIdInput",
+            "description": "Enter individual number",
             "type": "promptString"
         }
     ]

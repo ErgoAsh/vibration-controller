@@ -16,6 +16,25 @@
                 "enabled": true,
                 "samplesPerSecond": 5
             }
+        },
+        {
+            "name": "Ceedling debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Build/test/out/${command:ceedlingExplorer.debugTestExecutable}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

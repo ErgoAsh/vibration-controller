@@ -1,7 +1,7 @@
 #ifndef ARRAY_A_H_
 #define ARRAY_A_H_
 
-__attribute__((section(".large_buffer"))) data_point_t points_a[4096] = {
+__attribute__((section(".array_a"))) volatile data_point_t points_a[4096] = {
     {0, 2717.00517241379, 262, -456, 1000, 0},
     {1, 2982.00517241379, 154, -445, 1000, 0},
     {2, 3394.00517241379, 268, -415, 1000, 0},

@@ -175,9 +175,29 @@ SECTIONS
     . = ALIGN(8);
   } >DTCMRAM
 
-  .large_buffer : /* Space before ':' is critical */
+  .frame_rx : /* Space before ':' is critical */
   {
-    *(.large_buffer)
+    *(.frame_rx)
+  } >RAM
+
+  .frame_tx : /* Space before ':' is critical */
+  {
+    *(.frame_tx)
+  } >RAM
+
+  .array_x : /* Space before ':' is critical */
+  {
+    *(.array_x)
+  } >RAM
+
+  .array_v : /* Space before ':' is critical */
+  {
+    *(.array_v)
+  } >RAM
+
+  .array_a : /* Space before ':' is critical */
+  {
+    *(.array_a)
   } >RAM
 
   /* Remove information from the standard libraries */

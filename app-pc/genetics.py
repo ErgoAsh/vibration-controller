@@ -4,6 +4,7 @@ import numpy as np
 import random
 import threading
 import pandas as pd
+from time import sleep
 from enums import ToDeviceCommand
 from config_handler import config, save_config
 from scipy.signal import find_peaks
@@ -34,10 +35,6 @@ class Individual:
             self.has_received_response = True
         else:
             self.load_response()
-
-        if generation_id == 0:
-            self.regulation_data = self.generate_new_regulation_data(x, v, a, u)
-            return
 
         if regulation_data is not None:
             self.regulation_data = regulation_data.copy()
@@ -70,34 +67,37 @@ class Individual:
 
     def load_response(self):
         try:
-            self.regulation_data = pd.read_csv(
-                f"./generations/gen_{self.generation_id}/{self.individual_id}_response.csv"
+            self.response_data = pd.read_csv(
+                f"./generations/gen_{self.generation_id}/ind_{self.individual_id}_response.csv"
             )
+            self.has_received_response = True
         except FileNotFoundError:
             pass
 
     def load_regulation(self):
         try:
             self.regulation_data = pd.read_csv(
-                f"./generations/gen_{self.generation_id}/{self.individual_id}_regulation.csv"
+                f"./generations/gen_{self.generation_id}/ind_{self.individual_id}_regulation.csv"
             )
-            self.has_received_response = True
         except FileNotFoundError:
+            if self.generation_id == 0:
+                self.regulation_data = self.generate_new_regulation_data()
+                return
             pass
 
     def save_regulation(self):
-        self.response_data.to_csv(
-            f"./generations/gen_{self.generation_id}/{self.individual_id}_regulation.csv"
-        )
+        if self.regulation_data is not None:
+            if not os.path.exists(f"./generations/gen_{self.generation_id}/"):
+                os.makedirs(f"./generations/gen_{self.generation_id}/")
+
+            self.regulation_data.to_csv(
+                f"./generations/gen_{self.generation_id}/ind_{self.individual_id}_regulation.csv"
+            )
 
     def save_response(self):
         if self.response_data is not None:
             if not os.path.exists(f"./generations/gen_{self.generation_id}/"):
                 os.makedirs(f"./generations/gen_{self.generation_id}/")
-
-            self.response_data.to_csv(
-                f"./generations/gen_{self.generation_id}/{self.individual_id}_response.csv"
-            )
 
             if "generations" not in config:
                 config["generations"] = dict()
@@ -106,26 +106,34 @@ class Individual:
                 config["generations"][f"gen_{self.generation_id}"] = dict()
 
             if (
-                self.individual_id
+                f"ind_{self.individual_id}"
                 not in config["generations"][f"gen_{self.generation_id}"]
             ):
                 config["generations"][f"gen_{self.generation_id}"][
-                    self.individual_id
+                    f"ind_{self.individual_id}"
                 ] = dict()
 
-            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
-                "t_reg"
-            ] = self.calc_t_reg()
+            config["generations"][f"gen_{self.generation_id}"][
+                f"ind_{self.individual_id}"
+            ]["t_reg"] = self.calc_t_reg()
 
-            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
-                "x_at_8"
-            ] = self.calc_x_at_8()
+            config["generations"][f"gen_{self.generation_id}"][
+                f"ind_{self.individual_id}"
+            ]["x_at_8"] = self.calc_x_at_8()
 
-            config["generations"][f"gen_{self.generation_id}"][self.individual_id][
-                "x_max"
-            ] = self.calc_x_max()
+            config["generations"][f"gen_{self.generation_id}"][
+                f"ind_{self.individual_id}"
+            ]["x_thresh"] = self.calc_x_thresh()
 
-            save_config()
+            config["generations"][f"gen_{self.generation_id}"][
+                f"ind_{self.individual_id}"
+            ]["x_max"] = self.calc_x_max()
+
+            self.response_data.to_csv(
+                f"./generations/gen_{self.generation_id}/ind_{self.individual_id}_response.csv"
+            )
+
+            save_config(new_config=config)
             self.has_received_response = True
 
     def generate_new_regulation_data(self, x=None, v=None, a=None, u=None):
@@ -147,16 +155,16 @@ class Individual:
     def get_id(self):
         return self.individual_id
 
-    def get_x(self, x):
+    def get_x(self):
         return self.regulation_data["x"]
 
-    def get_v(self, v):
+    def get_v(self):
         return self.regulation_data["v"]
 
-    def get_a(self, a):
+    def get_a(self):
         return self.regulation_data["a"]
 
-    def get_u(self, u):
+    def get_u(self):
         return self.regulation_data["u"]
 
     def set_x(self, x):
@@ -177,8 +185,8 @@ class Individual:
         return ts + 10 * x8
 
     def calc_peaks(self):
-        peaks, _ = find_peaks(self.response_data["x"], prominence=250)
-        min_peaks, _ = find_peaks(-self.response_data["x"], prominence=250)
+        peaks, _ = find_peaks(self.response_data["x"], prominence=100, distance=50)
+        min_peaks, _ = find_peaks(-self.response_data["x"], prominence=100, distance=50)
 
         # Find all positive peaks
         interp_upper = interp1d(
@@ -203,9 +211,12 @@ class Individual:
         if "x_up" not in self.response_data.columns:
             self.calc_peaks()
 
-        x_threshold = 0.15 * self.calc_x_max()
+        x_threshold = self.calc_x_thresh()
         t_calibration: np.float32 = self.response_data["t"].iloc[
-            np.argmax(self.response_data["x_up"] < x_threshold)
+            np.argmax(
+                (self.response_data["x_up"] - self.response_data["x_down"])
+                < x_threshold
+            )
         ]
 
         result = t_calibration.item()
@@ -213,6 +224,9 @@ class Individual:
             result = 8192 * 0.001
 
         return result
+
+    def calc_x_thresh(self):
+        return 0.15 * self.calc_x_max()
 
     def calc_x_at_8(self):
         if "x_up" not in self.response_data.columns:
@@ -226,7 +240,7 @@ class Individual:
         return x_end.item()
 
     def calc_x_max(self):
-        return np.max(self.response_data["x"]).item()
+        return np.max(np.abs(self.response_data["x"])).item()
 
     def crossover(self, other: Individual):
         alpha = random.random()
@@ -266,18 +280,35 @@ def genetic_thread():
     mutation_rate = config["data"]["mutation-rate"]
 
     population = initialize_population(pop_size, generation_id)
+    # save regulation when generated
+    for individual in population:
+        individual.save_regulation()
 
     while True:
-        for individual in population:
+        for i, individual in enumerate(population):
             current_individual = individual
+            config["data"]["latest-individual"] = i
+
             if individual.has_received_response:
                 continue
 
+            print(
+                f"Genetic algorithm is now using gen_{generation_id} indiv_{current_individual.individual_id}"
+            )
+
             genetics_event.clear()
+            # send regulation data
             execute_to_device_command(
                 ToDeviceCommand.COMMAND_SET_REGULATION_DATA, individual
             )
+
+            sleep(1.5)
+
+            # get respons data
+            execute_to_device_command(ToDeviceCommand.COMMAND_MOVE_TO_START)
             genetics_event.wait()
+
+        print(f"Responses from gen_{generation_id} has been received")
 
         # sort population by fitness
         population = sorted(population, key=lambda ind: ind.fitness())
@@ -299,6 +330,18 @@ def genetic_thread():
         # 3. mutate some individuals
         for individual in next_generation:
             individual.mutate(mutation_rate)
+
+        generation_id = generation_id + 1
+        config["data"]["latest-individual"] = 0
+        config["data"]["latest-generation"] = generation_id
+        save_config()
+
+        # update indices
+        for i in np.arange(0, pop_size):
+            next_generation[i].generation_id = generation_id
+            next_generation[i].individual_id = i
+            next_generation[i].has_received_response = False
+            next_generation[i].save_regulation()
 
         population = next_generation
 

@@ -77,17 +77,14 @@ def handle_plot_data():
     print(datetime.now().strftime("[%H:%M:%S.%f] "), end="")
     print("STOP: Host has received x, v, a, u")
 
+    # todo move
     length = len(data.index)
     dt = 0.001
     data["t"] = np.linspace(0, length * dt, length)
 
-    # TODO pass to genetics instead
-    # number = config["data"]["latest-csv"]
-    # data.to_csv(f"./data/data{number}.csv")
-    # config["data"]["latest-csv"] = int(number) + 1
-
     current_individual.response_data = data
     current_individual.save_response()
+    current_individual.save_regulation()
 
     genetics_event.set()
     rx_plot_event.set()

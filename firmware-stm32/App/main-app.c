@@ -29,7 +29,7 @@ bool has_usart_dma_tx_finished = false;
 volatile float sequence_samples[SEQUENCE_SAMPLES_COUNT];
 volatile uint16_t calibration_samples[CALIBRATION_SAMPLES_COUNT];
 volatile float regulation_samples[REGULATION_SAMPLES_COUNT];
-volatile float regulation_setpoints[SEQUENCE_SAMPLES_COUNT / REGULATION_SAMPLES_COUNT];
+volatile float regulation_setpoints[SEQUENCE_SAMPLES_COUNT];
 
 GPIO_PinState previous_button_state = GPIO_PIN_SET;
 GPIO_PinState current_button_state = GPIO_PIN_SET;
@@ -89,13 +89,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 }
 
+float delta_sample = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
     uint32_t value = HAL_ADC_GetValue(&hadc2);
     HAL_ADC_Stop_IT(&hadc2);
 
     if (sequence_process.machine.State == &sequence_process_states[MEASUREMENT_REGULATION_STATE]) {
-        float delta_sample = (float) value - calibration_mean;
+        delta_sample = (float) value - calibration_mean;
 
 #if (USE_REAL_UNITS)
         float sample_voltage = map(delta_sample, 3200.0f, 31655.0f, -0.2112f, -1.6369f);
@@ -110,16 +111,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
         sample_counter++;
         regulation_sample_counter++;
 
-        //if (sample_counter >= 3) {
-        if (regulation_sample_counter >= REGULATION_SAMPLES_COUNT) {
+        if (sample_counter > 3) {
+            //if (regulation_sample_counter >= REGULATION_SAMPLES_COUNT) {
             regulation_sample_counter = 0;
 
             data_point_t point = {
-                .x = regulation_samples[REGULATION_SAMPLES_COUNT],
-                .v = (regulation_samples[REGULATION_SAMPLES_COUNT] - regulation_samples[REGULATION_SAMPLES_COUNT - 1])
-                     / DELTA_TIME,
-                .a = (regulation_samples[REGULATION_SAMPLES_COUNT] - 2 * regulation_samples[REGULATION_SAMPLES_COUNT - 1]
-                      + regulation_samples[REGULATION_SAMPLES_COUNT - 2])
+                .x = sequence_samples[sample_counter],
+                .v = (sequence_samples[sample_counter] - sequence_samples[sample_counter - 1]) / DELTA_TIME,
+                .a = (sequence_samples[sample_counter] - 2 * sequence_samples[sample_counter - 1]
+                      + sequence_samples[sample_counter - 2])
                      / (DELTA_TIME * DELTA_TIME),
             };
 #if (REGULATION_BY_SAMPLE_ARRAY_ENABLED)
@@ -127,7 +127,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 #else
             float u = regulate_individuals_data(point);
 #endif
-            regulation_setpoints[regulation_setpoints_counter] = u;
+            regulation_setpoints[sample_counter] = u;
             regulation_setpoints_counter++;
 
 #if (REGULATION_ENABLED)
@@ -141,6 +141,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
             }
 
 #endif
+        } else {
+            regulation_setpoints[sample_counter] = 0;
         }
 
         if (sample_counter >= SEQUENCE_SAMPLES_COUNT) {
@@ -174,8 +176,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         if (Size == 1) {
             dispatch_command_to_device((to_device_command_t) rx_buffer[0], NULL);
             HAL_UARTEx_ReceiveToIdle_IT(&uart, rx_buffer, 64);
-        } else {
-            int a = 0;
         }
     }
 }

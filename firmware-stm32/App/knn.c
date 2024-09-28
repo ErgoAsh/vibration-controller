@@ -70,6 +70,12 @@ float regulate_with_sample_data(data_point_t compared_point)
     u_value += (points[3].u * points[3].distance) / sum_distance;
     u_value = u_value / 4;
 
+    if (u_value > 1000)
+        u_value = 1000;
+
+    if (u_value < -1000)
+        u_value = -1000;
+
     return u_value;
 }
 

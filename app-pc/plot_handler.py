@@ -8,11 +8,53 @@ from scipy.signal import hilbert
 from scipy.signal import find_peaks
 from scipy.interpolate import interp1d
 
+SENSOR_SENSITIVITY = 0.56 / 1000.0  # V/um
 
-def plot_interactive(individual: Individual):
+
+def map(x, in_min, in_max, out_min, out_max):
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+
+def plot_interactive(individual: Individual = None, force_show: bool = False):
+    if not force_show:
+        if not config["always-show-plot"]:
+            return
+
     mpl.use("qtagg")  # Interactive plot mode
 
+    if individual is None:
+        individual = Individual(
+            generation_id=config["data"]["latest-generation"],
+            individual_id=config["data"]["latest-individual"] - 1,  # FIXME
+        )
+
     data = individual.response_data
+    print(data)
+    print(f"Showed data of gen_{individual.generation_id}/{individual.individual_id}")
+
+    if config["scale-plots-to-real-units"]:
+        sample_voltage = map(data["x"], 3200.0, 31655.0, -0.2112, -1.6369)
+        sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000
+        data["x"] = sample_distance
+
+        sample_velocity = np.gradient(data["x"], 0.001)
+        data["v"] = sample_velocity  # np.insert(sample_velocity, 0, 0)
+
+        sample_acceleration = np.gradient(data["v"], 0.001)
+        data["a"] = sample_acceleration  # np.insert(sample_acceleration, 0, 0)
+
+        sample_voltage = map(data["x_up"], 3200.0, 31655.0, -0.2112, -1.6369)
+        sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000
+        data["x_up"] = sample_distance
+
+        sample_voltage = map(data["x_down"], 3200.0, 31655.0, -0.2112, -1.6369)
+        sample_distance = sample_voltage / SENSOR_SENSITIVITY / 1000 / 1000
+        data["x_down"] = sample_distance
+
+        data["x"] = data["x"] * 1000 * 10
+        data["x_up"] = data["x_up"] * 1000 * 10
+        data["x_down"] = data["x_down"] * 1000 * 10
+
     axes = data.plot(
         x="t",
         y=["x", "v", "a", "u"],
@@ -23,8 +65,9 @@ def plot_interactive(individual: Individual):
         xlabel=r"Czas t [s]",
     )
 
+    individual.calc_peaks()
     print(
-        f"x_end: {individual.calc_x_max()}, x_at_8: {individual.calc_x_at_8()}, t_reg: {individual.calc_t_reg()}"
+        f"x_max: {individual.calc_x_max()}, x_thresh: {individual.calc_x_thresh()}, x_at_8: {individual.calc_x_at_8()}, t_reg: {individual.calc_t_reg()}"
     )
 
     axes[0].vlines(
@@ -51,6 +94,7 @@ def plot_interactive(individual: Individual):
 
     # if config["always-show-plot"]:
     plt.show()
+    # plt.close()
 
     """
     Uncomment to view FFT of signal

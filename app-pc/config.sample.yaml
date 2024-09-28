@@ -1,9 +1,13 @@
 serial-port: /dev/ttyACM1
 baud-rate: 921600
 use-interactive-menu: true
-always-show-plot: true
+always-show-plot: false
+scale-plots-to-real-units: false
 
 data:
   latest-generation: 0
+  latest-individual: 0
   population-size: 50
   mutation-rate: 0.001
+
+

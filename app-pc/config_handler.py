@@ -11,9 +11,13 @@ def load_config(config_file: str = "config.yaml"):
         print("Config loaded")
 
 
-def save_config(config_file: str = "config.yaml"):
+def save_config(config_file: str = "config.yaml", new_config=None):
     global config
+    if new_config is not None:
+        config = new_config
+
     if config is None:
+        print("?? Config is null ??")
         return
 
     with open(config_file, "w") as f:

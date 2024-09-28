@@ -14,7 +14,7 @@ if __name__ == "__main__":
     if config["use-interactive-menu"]:
         while True:
             rx_plot_event.wait()
-            plot_interactive(current_individual)
+            plot_interactive()
             rx_plot_event.clear()
     else:
         while True:
