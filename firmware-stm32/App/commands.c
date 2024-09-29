@@ -85,8 +85,7 @@ void dispatch_command_to_host(to_device_command_t command, void *parameter)
         for (int i = 0; i < SEQUENCE_SAMPLES_COUNT; i++) {
             float sample = sequence_samples[i];
             memcpy(float_buffer, &sample, sizeof(float));
-            HAL_StatusTypeDef status = HAL_UART_Transmit(&uart, float_buffer, sizeof(float), HAL_MAX_DELAY);
-            UNUSED(status); // TODO handle status errors
+            HAL_UART_Transmit(&uart, float_buffer, sizeof(float), HAL_MAX_DELAY);
         }
         break;
 

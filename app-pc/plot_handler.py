@@ -83,10 +83,10 @@ def plot_interactive(individual: Individual = None, force_show: bool = False):
 
     # print(f"DeltaX: max(data["x"][:128]) - min(data["x"][:128])
 
-    axes[0].set_ylabel(r"Przemieszczenie x [m]")
-    axes[1].set_ylabel(r"Predkość v [m/s]")
-    axes[2].set_ylabel(r"Przyśpieszenie a [m/s^2]")
-    axes[3].set_ylabel(r"Nastawa elektromagnesów u [-]")
+    axes[0].set_ylabel(r"Przemieszczenie x")
+    axes[1].set_ylabel(r"Predkość v")
+    axes[2].set_ylabel(r"Przyśpieszenie a]")
+    axes[3].set_ylabel(r"Nastawa elektromagnesów u")
     for i in np.arange(0, 4):
         axes[i].grid(linestyle=":", which="major", color="darkgrey")
         axes[i].grid(linestyle=":", which="minor", color="whitesmoke")
